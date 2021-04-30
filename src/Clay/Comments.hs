@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Clay.Comments where
 
+import Control.Monad.Writer (lift, tell)
 import Data.Maybe (isNothing)
 import Data.List (partition)
 
@@ -12,7 +13,7 @@ import Clay.Stylesheet
 -- Comments work with 'OverloadedStrings'. This will annotate every non-nested
 -- value.
 commenting :: CommentText -> Css -> Css
-commenting c css = foldMap (rule . addComment c) $ runS css
+commenting c css = S (tell =<< lift (fmap (addComment c) <$> runS css))
 infixl 3 `commenting`
 
 -- The last case indicates there may be something wrong in the typing, as

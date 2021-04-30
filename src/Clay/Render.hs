@@ -19,6 +19,7 @@ import           Data.Maybe
 import           Data.Text              (Text, pack)
 import           Data.Text.Lazy.Builder
 import           Prelude                hiding ((**))
+import           SourceMap.Types        (SourceMapping(..))
 
 import qualified Data.Text              as Text
 import qualified Data.Text.Lazy         as Lazy
@@ -113,7 +114,11 @@ renderWith cfg top
   = renderBanner cfg
   . toLazyText
   . rules cfg top
-  . runS
+  . runS' sm0
+
+-- | Need to add parameters to Config for smFile and smSourceRoot.
+sm0 :: SourceMapping
+sm0 = SourceMapping {smFile = "", smSourceRoot = Nothing, smMappings = []}
 
 -- | Render a single CSS `Selector`.
 
