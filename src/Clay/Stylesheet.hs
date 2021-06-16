@@ -1,15 +1,19 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE CPP #-}
 module Clay.Stylesheet where
 
 import Control.Applicative
-import Control.Arrow (second)
-import Control.Monad.Writer (Writer, execWriter, tell)
+import Control.Monad.State
+import Control.Monad.Writer hiding (All)
 import Data.Maybe (isJust)
 import Data.String (IsString)
 import Data.Text (Text)
+import SourceMap.Types
 
 import Clay.Selector hiding (Child)
 import Clay.Property
@@ -67,11 +71,14 @@ data Rule
   | Import   Text
   deriving Show
 
-newtype StyleM a = S (Writer [Rule] a)
+newtype StyleM a = S (WriterT [Rule] (State SourceMapping) a)
   deriving (Functor, Applicative, Monad)
 
-runS :: Css -> [Rule]
-runS (S a) = execWriter a
+runS' :: SourceMapping -> Css -> [Rule]
+runS' sm rs = evalState (runS rs) sm
+
+runS :: Css -> State SourceMapping [Rule]
+runS (S a) = execWriterT a
 
 rule :: Rule -> Css
 rule a = S (tell [a])
@@ -117,56 +124,62 @@ infixr 5 <?
 infixr 5 ?
 infixr 5 &
 
+rule' :: ([Rule] -> Rule) -> Css -> Css
+rule' f rs = rule =<< S (lift (f <$> runS rs))
+
 -- | Assign a stylesheet to a selector. When the selector is nested inside an
 -- outer scope it will be composed with `deep`.
 
 (?) :: Selector -> Css -> Css
-(?) sel rs = rule $ Nested (Sub sel) (runS rs)
+(?) sel rs = rule' (Nested (Sub sel)) rs
 
 -- | Assign a stylesheet to a selector. When the selector is nested inside an
 -- outer scope it will be composed with `|>`.
 
 (<?) :: Selector -> Css -> Css
-(<?) sel rs = rule $ Nested (Child sel) (runS rs)
+(<?) sel rs = rule' (Nested (Child sel)) rs
 
 -- | Assign a stylesheet to a filter selector. When the selector is nested
 -- inside an outer scope it will be composed with the `with` selector.
 
 (&) :: Refinement -> Css -> Css
-(&) p rs = rule $ Nested (Self p) (runS rs)
+(&) p rs = rule' (Nested (Self p)) rs
 
 -- | Root is used to add style rules to the top scope.
 
 root :: Selector -> Css -> Css
-root sel rs = rule $ Nested (Root sel) (runS rs)
+root sel rs = rule' (Nested (Root sel)) rs
 
 -- | Pop is used to add style rules to selectors defined in an outer scope. The
 -- counter specifies how far up the scope stack we want to add the rules.
 
 pop :: Int -> Css -> Css
-pop i rs = rule $ Nested (Pop i) (runS rs)
+-- pop i rs = rule $ Nested (Pop i) (runS rs)
+pop i rs = rule' (Nested (Pop i)) rs
 
 -------------------------------------------------------------------------------
 
 -- | Apply a set of style rules when the media type and feature queries apply.
 
 query :: MediaType -> [Feature] -> Css -> Css
-query ty fs rs = rule $ Query (MediaQuery Nothing ty fs) (runS rs)
+query ty fs rs = rule' (Query (MediaQuery Nothing ty fs)) rs
 
 -- | Apply a set of style rules when the media type and feature queries do not apply.
 
 queryNot :: MediaType -> [Feature] -> Css -> Css
-queryNot ty fs rs = rule $ Query (MediaQuery (Just Not) ty fs) (runS rs)
+queryNot ty fs rs = rule' (Query (MediaQuery (Just Not) ty fs)) rs
 
 -- | Apply a set of style rules only when the media type and feature queries apply.
 
 queryOnly :: MediaType -> [Feature] -> Css -> Css
-queryOnly ty fs rs = rule $ Query (MediaQuery (Just Only) ty fs) (runS rs)
+queryOnly ty fs rs = rule' (Query (MediaQuery (Just Only) ty fs)) rs
 
 -------------------------------------------------------------------------------
 
 keyframes :: Text -> [(Double, Css)] -> Css
-keyframes n xs = rule $ Keyframe (Keyframes n (map (second runS) xs))
+keyframes n xs = do
+  prs <- S (lift (mapM (\(d, rs) -> (d,) <$> runS rs) xs))
+  rule $ Keyframe (Keyframes n prs)
 
 keyframesFromTo :: Text -> Css -> Css -> Css
 keyframesFromTo n a b = keyframes n [(0, a), (100, b)]
@@ -176,7 +189,7 @@ keyframesFromTo n a b = keyframes n [(0, a), (100, b)]
 -- | Define a new font-face.
 
 fontFace :: Css -> Css
-fontFace rs = rule $ Face (runS rs)
+fontFace rs = rule' Face rs
 
 
 -- | Import a CSS file from a URL
@@ -191,7 +204,8 @@ importUrl l = rule $ Import l
 --
 -- Use sparingly.
 important :: Css -> Css
-important = foldMap (rule . addImportant) . runS
+important rs = do
+  S (tell =<< lift (fmap addImportant <$> runS rs))
 
 -- The last case indicates there may be something wrong in the typing, as
 -- it shouldn't be possible to make a non-property important. In practice,
