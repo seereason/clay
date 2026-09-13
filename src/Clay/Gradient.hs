@@ -53,8 +53,12 @@ linearGradient d xs = other $ Value $
 
 hGradient, vGradient :: Color -> Color -> BackgroundImage
 
-hGradient = shortcut (linearGradient (straight sideLeft))
-vGradient = shortcut (linearGradient (straight sideTop ))
+-- The sides are the ones the gradient runs toward, so that the first
+-- color is at the left/top as before.  They read as the opposite of
+-- what they were because 'straight' used to take the side the gradient
+-- started from.
+hGradient = shortcut (linearGradient (straight sideRight ))
+vGradient = shortcut (linearGradient (straight sideBottom))
 
 -------------------------------------------------------------------------------
 
@@ -65,8 +69,8 @@ repeatingLinearGradient d xs = other $ Value $
 
 hRepeatingGradient, vRepeatingGradient :: Color -> Color -> BackgroundImage
 
-hRepeatingGradient = shortcut (repeatingLinearGradient (straight sideLeft))
-vRepeatingGradient = shortcut (repeatingLinearGradient (straight sideTop ))
+hRepeatingGradient = shortcut (repeatingLinearGradient (straight sideRight ))
+vRepeatingGradient = shortcut (repeatingLinearGradient (straight sideBottom))
 
 -------------------------------------------------------------------------------
 

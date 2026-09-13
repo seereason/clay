@@ -267,8 +267,22 @@ sideMiddle = Side "middle"
 newtype Direction = Direction Value
   deriving (Val, Other)
 
+-- | The side the gradient runs /toward/, as in the standard syntax's
+-- @to bottom@.
+--
+-- This used to emit a bare side keyword, which is the /legacy/ prefixed
+-- syntax and names the side the gradient starts /from/ -- the opposite
+-- direction.  A bare keyword is rejected outright by the unprefixed
+-- @linear-gradient@, so the standard declaration was dropped by every
+-- browser and rendering fell back to whichever vendor-prefixed
+-- declaration was still recognized, pointing the wrong way.
+--
+-- Note that the prefixed declarations Clay emits alongside the standard
+-- one share this same text, so they are now the ones that get dropped.
+-- That only matters for browsers predating unprefixed gradient support
+-- (Chrome 26, Firefox 16, Safari 6.1, IE 10).
 straight :: Side -> Direction
-straight a = Direction (value a)
+straight a = Direction ("to " <> value a)
 
 angular :: Angle a -> Direction
 angular a = Direction (value a)
