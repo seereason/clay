@@ -146,7 +146,7 @@ import Clay.Attributes hiding
 import Clay.Background
 import Clay.Border
 import Clay.Box
-import Clay.Color     hiding (clamp)
+import Clay.Color
 import Clay.Time
 import Clay.Comments (commenting)
 import Clay.Common

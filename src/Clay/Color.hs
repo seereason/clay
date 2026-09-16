@@ -116,22 +116,22 @@ toHsla color =
 -- * Computing with colors.
 
 (*.) :: Color -> Integer -> Color
-(*.) (Rgba r g b a) i = Rgba (clamp (r * i)) (clamp (g * i)) (clamp (b * i)) a
+(*.) (Rgba r g b a) i = Rgba (clampChannel (r * i)) (clampChannel (g * i)) (clampChannel (b * i)) a
 (*.) o              _ = o
 infixl 7 *.
 
 (+.) :: Color -> Integer -> Color
-(+.) (Rgba r g b a) i = Rgba (clamp (r + i)) (clamp (g + i)) (clamp (b + i)) a
+(+.) (Rgba r g b a) i = Rgba (clampChannel (r + i)) (clampChannel (g + i)) (clampChannel (b + i)) a
 (+.) o              _ = o
 infixl 6 +.
 
 (-.) :: Color -> Integer -> Color
-(-.) (Rgba r g b a) i = Rgba (clamp (r - i)) (clamp (g - i)) (clamp (b - i)) a
+(-.) (Rgba r g b a) i = Rgba (clampChannel (r - i)) (clampChannel (g - i)) (clampChannel (b - i)) a
 (-.) o              _ = o
 infixl 6 -.
 
-clamp :: Ord a => Num a => a -> a
-clamp i = max (min i (fromIntegral (255 :: Integer))) (fromIntegral (0 :: Integer))
+clampChannel :: Ord a => Num a => a -> a
+clampChannel i = max (min i (fromIntegral (255 :: Integer))) (fromIntegral (0 :: Integer))
 
 lighten :: Float -> Color -> Color
 lighten factor color =
@@ -166,12 +166,12 @@ lerp factor startColor boundColor =
                   lerpComponent amount start bound =
                     let difference = bound - start
                         adjustment = truncate $ fromIntegral difference * amount
-                    in clamp $ start + adjustment
+                    in clampChannel $ start + adjustment
                   lerpAlpha :: Float -> Float -> Float -> Float
                   lerpAlpha amount start bound =
                     let difference = bound - start
                         adjustment = fromIntegral $ (truncate $ difference * amount :: Integer)
-                    in clamp $ start + adjustment
+                    in clampChannel $ start + adjustment
 
 -------------------------------------------------------------------------------
 
