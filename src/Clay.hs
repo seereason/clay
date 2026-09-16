@@ -146,7 +146,7 @@ import Clay.Attributes hiding
 import Clay.Background
 import Clay.Border
 import Clay.Box
-import Clay.Color
+import Clay.Color     hiding (clamp)
 import Clay.Time
 import Clay.Comments (commenting)
 import Clay.Common
@@ -159,7 +159,7 @@ import Clay.Geometry
 import Clay.Gradient
 import Clay.Grid
 import Clay.List
-import Clay.Size
+import Clay.Size      hiding (min, max)
 import Clay.Text       hiding (pre)
 import Clay.Transform
 import Clay.Transition

@@ -58,6 +58,12 @@ module Clay.Size
 , (*@)
 , (@/)
 
+-- * Math functions.
+
+, Clay.Size.min
+, Clay.Size.max
+, clamp
+
 -- * Shorthands for properties that can be applied separately to each box side.
 
 , sym
@@ -83,7 +89,7 @@ module Clay.Size
 where
 
 import Data.Monoid
-import Prelude hiding (rem)
+import Prelude hiding (rem, min, max)
 import Data.Text (Text)
 
 import Clay.Common
@@ -107,6 +113,9 @@ data Size a =
   forall b c. DiffSize (Size b) (Size c) |
   MultSize Number (Size a) |
   DivSize Number (Size a) |
+  forall b c. MinSize (Size b) (Size c) |
+  forall b c. MaxSize (Size b) (Size c) |
+  forall b c d. ClampSize (Size b) (Size c) (Size d) |
   OtherSize Value
 
 deriving instance Show (Size a)
@@ -117,11 +126,25 @@ sizeToText (SumSize a b) = mconcat ["(", sizeToText a, " + ", sizeToText b, ")"]
 sizeToText (DiffSize a b) = mconcat ["(", sizeToText a, " - ", sizeToText b, ")"]
 sizeToText (MultSize a b) = mconcat ["(", cssNumberText a, " * ", sizeToText b, ")"]
 sizeToText (DivSize a b) = mconcat ["(", sizeToText b, " / ", cssNumberText a, ")"]
+sizeToText (MinSize a b) = mconcat ["min(", sizeToText a, ", ", sizeToText b, ")"]
+sizeToText (MaxSize a b) = mconcat ["max(", sizeToText a, ", ", sizeToText b, ")"]
+sizeToText (ClampSize a b c) =
+  mconcat ["clamp(", sizeToText a, ", ", sizeToText b, ", ", sizeToText c, ")"]
 sizeToText (OtherSize a) = plain $ unValue a
 
 instance Val (Size a) where
   value (SimpleSize a) = value a
   value (OtherSize a) = a
+  -- min(), max() and clamp() are math functions in their own right, so
+  -- they are written directly rather than wrapped in calc().  They also
+  -- skip the vendor prefixes: unlike calc() these were never prefixed,
+  -- and a browser old enough to want -webkit-calc() would not
+  -- understand them anyway.  Arithmetic nested inside one of them still
+  -- renders as a parenthesized expression, which is what a math
+  -- function wants -- no inner calc() is required.
+  value s@MinSize{} = Value $ Plain (sizeToText s)
+  value s@MaxSize{} = Value $ Plain (sizeToText s)
+  value s@ClampSize{} = Value $ Plain (sizeToText s)
   value s = Value $ browsers <> Plain ("calc" <> sizeToText s)
 
 instance Auto (Size a) where auto = OtherSize Clay.Common.autoValue
@@ -292,6 +315,32 @@ a @* b = MultSize b a
 infixl 7 @/
 (@/) :: Size a -> Number -> Size a
 a @/ b = DivSize b a
+
+-- | The smaller of two sizes, as the CSS @min()@ function.  Like the
+-- calc operators above, the two need not share a unit:
+--
+-- > width (Clay.Size.min (pct 100) (em 40))   -- min(100%, 40em)
+--
+-- These shadow 'Prelude.min' and 'Prelude.max', so they are not
+-- re-exported by "Clay" -- import "Clay.Size" for them, the same way
+-- "Clay.Filter"'s @url@ and @opacity@ are reached.
+min :: Size a -> Size b -> Size (SizeCombination a b)
+min a b = MinSize a b
+
+-- | The larger of two sizes, as the CSS @max()@ function.
+max :: Size a -> Size b -> Size (SizeCombination a b)
+max a b = MaxSize a b
+
+-- | A size held between a floor and a ceiling, as the CSS @clamp()@
+-- function.  The arguments are the minimum, the preferred value and
+-- the maximum, in that order:
+--
+-- > fontSize (clamp (em 1) (vw 2.5) (em 2))   -- clamp(1em, 2.5vw, 2em)
+--
+-- Unlike 'min' and 'max' this one clashes with nothing in the Prelude,
+-- so "Clay" re-exports it.
+clamp :: Size a -> Size b -> Size c -> Size (SizeCombination a (SizeCombination b c))
+clamp a b c = ClampSize a b c
 
 -------------------------------------------------------------------------------
 
