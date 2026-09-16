@@ -76,6 +76,7 @@ Library
     Clay.Size
     Clay.Stylesheet
     Clay.Text
+    Clay.TextWrap
     Clay.Time
     Clay.Transform
     Clay.Transition

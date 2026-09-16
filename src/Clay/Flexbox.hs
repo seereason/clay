@@ -118,3 +118,19 @@ justifyContent = key "justify-content"
 
 order :: Int -> Css
 order i = key "order" (fromString (show i) :: Value)
+
+-------------------------------------------------------------------------------
+
+-- | The CSS Box Alignment gap properties.  These are not specific to
+-- flexbox -- grid and multi-column use them too -- but this is where
+-- the rest of the flex alignment lives.  Note that @grid-gap@, in
+-- "Clay.Grid", is the older name for the same thing.
+
+gap :: Size a -> Css
+gap = key "gap"
+
+columnGap :: Size a -> Css
+columnGap = key "column-gap"
+
+rowGap :: Size a -> Css
+rowGap = key "row-gap"
