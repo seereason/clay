@@ -15,7 +15,7 @@ import Data.Text
 import Data.Text.Lazy (toStrict)
 import Data.List (sort)
 
-import Prelude hiding (rem)
+import Prelude hiding (rem, min, max)
 
 sizeRepr :: Size a -> Text
 sizeRepr = plain . unValue . value
@@ -78,3 +78,37 @@ spec = do
         `shouldBe` "calc((2em + ((3 * (4 * (3px - (2pt / 3)))) / 4)) + (2 * ((5 * 3vmax) + 4vmin)))"
     it "returns original value if other is used" $
       other (value aqua) `shouldBe` (value aqua)
+  describe "math functions" $ do
+    it "returns min for two sizes" $
+      sizeRepr (min (pct 100) (em 40)) `shouldBe` "min(100%, 40em)"
+    it "returns max for two sizes" $
+      sizeRepr (max (px 320) (pct 50)) `shouldBe` "max(320px, 50%)"
+    it "returns clamp for three sizes" $
+      sizeRepr (clamp (em 1) (vw 2.5) (em 2)) `shouldBe` "clamp(1em, 2.5vw, 2em)"
+    it "combines sizes of different types" $
+      sizeRepr (min (em 2) (pct 10)) `shouldBe` "min(2em, 10%)"
+    it "behaves correctly with negatives" $
+      sizeRepr (max (em (-2)) (px (-5))) `shouldBe` "max(-2em, -5px)"
+    -- Arithmetic is allowed directly inside a math function, so the
+    -- argument is a parenthesized expression rather than a nested calc.
+    it "takes an arithmetic expression as an argument" $
+      sizeRepr (min (pct 100 @-@ em 2) (px 960)) `shouldBe` "min((100% - 2em), 960px)"
+    it "takes a math function as an argument" $
+      sizeRepr (min (max (px 320) (pct 50)) (em 40))
+        `shouldBe` "min(max(320px, 50%), 40em)"
+    it "nests inside calc" $
+      sizeRepr (min (pct 100) (em 40) @+@ px 8)
+        `shouldBe` "calc(min(100%, 40em) + 8px)"
+    it "nests inside clamp" $
+      sizeRepr (clamp (em 1) (min (vw 5) (em 3)) (em 2))
+        `shouldBe` "clamp(1em, min(5vw, 3em), 2em)"
+    -- Unlike calc, these were never vendor prefixed.
+    it "is not prefixed" $
+      min (pct 100) (em 40) `shouldNotSatisfy` hasAllPrefixes
+    it "is not prefixed by clamp" $
+      clamp (em 1) (vw 2.5) (em 2) `shouldNotSatisfy` hasAllPrefixes
+    it "is still prefixed when wrapped in calc" $
+      (min (pct 100) (em 40) @+@ px 8) `shouldSatisfy` hasAllPrefixes
+    it "renders as a property value" $
+      compactRender (width (min (pct 100) (em 40)))
+        `shouldBe` "{width:min(100%, 40em)}"
