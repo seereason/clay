@@ -142,20 +142,20 @@ spec = do
 
     describe "lighten" $ do
         it "lightens an HSL color by a factor" $
-            lighten 0.2 (Hsla 154 0.79 0.46 255) `shouldBe` Hsla 154 0.667 0.565 255
+            lighten 0.2 (Hsla 154 0.79 0.46 1) `shouldBe` Hsla 154 0.667 0.565 1
         it "lightens an RGB color by a factor" $
-            lighten 0.2 (Rgba 25 210 130 255) `shouldBe` Rgba 71 219 155 255
+            lighten 0.2 (Rgba 25 210 130 1) `shouldBe` Rgba 71 219 155 1
         it "does not lighten an HSL color past white" $
-            lighten 0.8 (Hsla 154 0.79 0.46 255) `shouldBe` Hsla 154 0.649 0.888 255
+            lighten 0.8 (Hsla 154 0.79 0.46 1) `shouldBe` Hsla 154 0.649 0.888 1
         it "does not lighten an RGB color past white" $
-            lighten 0.8 (Rgba 25 210 130 255) `shouldBe` Rgba 209 246 230 255
+            lighten 0.8 (Rgba 25 210 130 1) `shouldBe` Rgba 209 246 230 1
 
     describe "darken" $ do
         it "darken an HSL color by a factor" $
-            darken 0.2 (Hsla 154 0.79 0.46 255) `shouldBe` Hsla 154 0.787 0.369 255
+            darken 0.2 (Hsla 154 0.79 0.46 1) `shouldBe` Hsla 154 0.787 0.369 1
         it "darken an RGB color by a factor" $
-            darken 0.2 (Rgba 25 210 130 255) `shouldBe` Rgba 20 168 104 255
+            darken 0.2 (Rgba 25 210 130 1) `shouldBe` Rgba 20 168 104 1
         it "does not darken an HSL color past black" $
-            darken 0.8 (Hsla 154 0.79 0.46 255) `shouldBe` Hsla 154 0.787 0.092 255
+            darken 0.8 (Hsla 154 0.79 0.46 1) `shouldBe` Hsla 154 0.787 0.092 1
         it "does not darken an RGB color past black" $
-            darken 0.8 (Rgba 25 210 130 255) `shouldBe` Rgba 5 42 26 255
+            darken 0.8 (Rgba 25 210 130 1) `shouldBe` Rgba 5 42 26 1

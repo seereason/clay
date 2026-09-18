@@ -301,18 +301,24 @@ infixl 6 -.
 clampChannel :: Ord a => Num a => a -> a
 clampChannel i = max (min i (fromIntegral (255 :: Integer))) (fromIntegral (0 :: Integer))
 
+-- | The alpha of the bound colour is 1, not 255: 'Color's alpha
+-- channel is a fraction, as the rendered @rgba()@ requires, not a byte
+-- like the colour channels beside it.  With 255 the alpha was lerped
+-- towards it too, so @darken 0.2 \"#f8f4f1\"@ produced
+-- @rgba(224,220,217,51.0)@ -- an alpha browsers reject, making them
+-- discard the whole declaration.
 lighten :: Float -> Color -> Color
 lighten factor color =
     case color of
         c@(Hsla {}) -> toHsla $ lighten factor (toRgba c)
-        c@(Rgba {}) -> lerp factor c (Rgba 255 255 255 255)
+        c@(Rgba {}) -> lerp factor c (Rgba 255 255 255 1)
         Other _     -> error "Other cannot be lightened."
 
 darken :: Float -> Color -> Color
 darken factor color =
     case color of
         c@(Hsla {}) -> toHsla $ darken factor (toRgba c)
-        c@(Rgba {}) -> lerp factor c (Rgba 0 0 0 255)
+        c@(Rgba {}) -> lerp factor c (Rgba 0 0 0 1)
         Other _     -> error "Other cannot be darkened."
 
 lerp :: Float -> Color -> Color -> Color

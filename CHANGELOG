@@ -1,5 +1,12 @@
 CHANGELOG
 
+  0.16.2:
+    - Fix the alpha channel produced by `lighten` and `darken`.  They
+      lerped towards a bound colour whose alpha was 255, but alpha is
+      a fraction, so the result was scaled by 255: `darken 0.2` on an
+      opaque colour gave `rgba(r,g,b,51.0)`.  Browsers reject that and
+      discard the declaration, so the colour appeared unchanged.
+
   0.16.1:
     - Add support for overscroll-behaviour
     Thanks to Sylvain Henry
